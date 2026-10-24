@@ -1,0 +1,5 @@
+# Built paks go on GitHub Releases, not in the repo
+*.pak
+
+# Staging folder used by tools/package.ps1
+build/
