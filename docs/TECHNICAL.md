@@ -46,6 +46,15 @@ Whatever actually makes the bow render happens in that native code, which is why
 
 **Release build:** `DEBUG = False` in `gen.py` skips creating `W_HoldBowDebug` and leaves the B / N / M key events unconnected. M (put the hero's material on the bow) would otherwise re-skin the bow until a restart. Everything else is the v12.1 probe: mode 1 (`ShowWeaponSlot` while holding) is the start value, so the v4–v11 experiments are built but inactive.
 
+## Ending the hold (v13, current build)
+- **Montages seen** (keyboard and mouse, camp): shot = `Player_Bow_Charge_Montage`; melee swings = `AnimMontage_1`, `AnimMontage_2`; potion = `AnimMontage_3`; another action = `AnimMontage_4`; Corrupted Beacon artifact = `Player_Corrupted_Beacon_Montage`; click-to-walk and rolls play **no** montage. The `AnimMontage_N` names are numbered in creation order, so they can't identify melee by themselves.
+- **Rule:** A / Left Mouse only store the press time (`PressT`). At the start of Tick, if holding, the press was ≤ 0.5 s ago, and a montage other than `Player_Bow_Charge_Montage` is playing, the hold ends. Click-to-walk (no montage) keeps the bow.
+- **Weapons on release:** the hold keeps the bow actor shown every frame, so a hidden bow at release means the montage that just started called `EquipmentDisplayComponent.HideWeapons()` (petting the dog does; `AnimNS_Player_HideWeapon` calls `HideWeapons` / `RestoreWeaponVisibility`).
+  - bow hidden → change nothing; set `PendRestore`, and once no montage is playing call `RestoreWeaponVisibility()` once. Before this, the hero petted the dog with the hammer.
+  - bow shown → a melee swing, which sets no weapon itself (the melee weapon is the default): hide the bow actor, show the melee actor, `RestoreWeaponVisibility()`. Deferring this as well made the hero swing the bow.
+- Tested: melee swings the hammer, petting the dog is unarmed, click-to-walk keeps the bow.
+- One GPU crash (`D3D device lost`, 0x887A0005) happened during testing, 49 s after start. It didn't recur in later sessions, so it's most likely a driver hiccup; watch for it.
+
 ## Next steps
 1. Strip the probe: drop the v4–v11 experiments (visibility/scale/material/pose forcing, re-attach), the M/N/B keys and the readout (or keep it behind a `DEBUG` switch, as Jump does). Keep: finding the bow/melee actors, `ShowWeaponSlot(ranged)` while holding, `RestoreWeaponVisibility()` on release, the EndPlay guard.
 2. Check whether hiding the melee actor is still needed now that `ShowWeaponSlot` handles the swap.
