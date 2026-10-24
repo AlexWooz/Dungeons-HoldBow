@@ -2,7 +2,7 @@
 
 A Blueprint mod for **Minecraft Dungeons** (Steam, v1.17.0.0, UE 4.22) that keeps the bow in hand after you shoot, as in Minecraft Dungeons II, until your next melee attack.
 
-**Status:** working. After a shot the ranged weapon stays in hand while you walk, until a melee press (A or Left Mouse). Tested in camp with the Bow, Longbow and Exploding Crossbow. The Blueprint is still the probe (`BP_HoldBowProbe`), with its readout and probe keys switched off (`DEBUG = False` in `tools/blueprint/gen.py`). See [docs/TECHNICAL.md](docs/TECHNICAL.md).
+**Status:** working. After a shot the ranged weapon stays in hand while you walk, until a melee attack (A or Left Mouse; clicking to walk keeps it). Tested in camp with the Bow, Longbow and Exploding Crossbow. The Blueprint is still the probe (`BP_HoldBowProbe`), with its readout and probe keys switched off (`DEBUG = False` in `tools/blueprint/gen.py`). See [docs/TECHNICAL.md](docs/TECHNICAL.md).
 
 ## Install
 1. Install Dungeons Blueprint Loader 1.0 (`Blueprint-Loader.pak`) in your `~mods` folder.

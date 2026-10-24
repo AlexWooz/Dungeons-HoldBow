@@ -84,19 +84,32 @@ L("new:KB.Pressed", "new:SetOff.execute"); L("new:GetOff.Off", "new:NotOff.A"); 
 
 # --- Melee press (A, Left Mouse): stop holding and give the game back its normal weapon state
 vget("GetHoldR", "Holding"); branch("BrRel"); vset("SetHold0", "Holding")
-vget("GetBowR", "Bow"); vget("GetMelR", "Melee")
-set_hidden("RelBow", "new:GetBowR.Bow", True); set_hidden("RelMel", "new:GetMelR.Melee", False)
+# A / Left Mouse only arm the release (PressT); Tick releases if a non-bow montage starts within 0.5 s, so a
+# Left Mouse click that just walks keeps the bow (melee = AnimMontage_N, walking = no montage; rolls play none,
+# potions and artifacts aren't on these keys).
+fn("NowP", GS, "GetTimeSeconds", pure=True); vset("SetPressT", "PressT"); L("new:NowP.ReturnValue", "new:SetPressT.PressT")
 for name, key in (("KA", "Gamepad_FaceButton_Bottom"), ("KLMB", "LeftMouseButton")):
     node(name, "/Script/BlueprintGraph.K2Node_InputKey", "InputKey=" + key, "bConsumeInput=False")
-    L("new:%s.Pressed" % name, "new:BrRel.execute")
+    L("new:%s.Pressed" % name, "new:SetPressT.execute")
 L("new:GetHoldR.Holding", "new:BrRel.Condition")
 L("new:BrRel.then", "new:SetHold0.execute"); S("new:SetHold0.Holding", "false")
-chain("new:SetHold0", "new:RelBow", "new:RelMel")
-cast("CastPCh2", "/Script/Dungeons.PlayerCharacter"); L("new:RelMel.then", "new:CastPCh2.execute"); L("new:GPChR.ReturnValue", "new:CastPCh2.Object")
+# Release changes nothing itself: the montage that triggered it sets the weapons (melee: ShowWeaponSlot(melee);
+# petting the dog: HideWeapons). Forcing the melee weapon visible here made the hero pet the dog with the hammer.
+# Once that montage is over, call RestoreWeaponVisibility() once as a safety net (PendRestore, at the start of Tick).
+vset("SetPR1", "PendRestore"); S("new:SetPR1.PendRestore", "true")
+# ...but only when that montage hid the weapons (the hold keeps the bow shown, so a hidden bow means the game just
+# ran HideWeapons). A melee swing sets nothing (the melee weapon is the default), so then swap back right away.
+vget("GetBowR", "Bow"); xget("BowHidR", ACT, "bHidden"); L("new:GetBowR.Bow", "new:BowHidR.self")
+branch("BrHidR"); L("new:SetHold0.then", "new:BrHidR.execute"); L("new:BowHidR.bHidden", "new:BrHidR.Condition")
+L("new:BrHidR.then", "new:SetPR1.execute")
+vget("GetMelR", "Melee"); set_hidden("RelBow", "new:GetBowR.Bow", True); set_hidden("RelMel", "new:GetMelR.Melee", False)
+L("new:BrHidR.else", "new:RelBow.execute"); chain("new:RelBow", "new:RelMel"); L("new:RelMel.then", "new:CastPCh2.execute")
+cast("CastPCh2", "/Script/Dungeons.PlayerCharacter"); L("new:GPChR.ReturnValue", "new:CastPCh2.Object")
 fn("GPChR", GS, "GetPlayerCharacter", pure=True)
 xget("EDC2", "/Script/Dungeons.PlayerCharacter", "EquipmentDisplayComponent"); L("new:CastPCh2.AsPlayer Character", "new:EDC2.self")
 fn("RWV", "/Script/Dungeons.EquipmentDisplayComponent", "RestoreWeaponVisibility"); L("new:EDC2.EquipmentDisplayComponent", "new:RWV.self")
 L("new:CastPCh2.then", "new:RWV.execute")
+vset("SetPR0", "PendRestore"); S("new:SetPR0.PendRestore", "false"); L("new:RWV.then", "new:SetPR0.execute")
 
 # --- Tick: find the two weapon actors, start holding when the game shows the bow, keep it shown
 fn("GPCh", GS, "GetPlayerCharacter", pure=True)
@@ -196,7 +209,24 @@ L("new:BrIsRW.then", "new:SetRS.execute"); L("new:GetScan.ScanIdx", "new:SetRS.R
 fn("ScanInc", KML, "Add_IntInt", pure=True); L("new:GetScan.ScanIdx", "new:ScanInc.A"); S("new:ScanInc.B", "1")
 vset("SetScan", "ScanIdx"); L("new:BrIsRW.else", "new:SetScan.execute"); L("new:ScanInc.ReturnValue", "new:SetScan.ScanIdx")
 for src in ("new:BrScan.else", "new:SetFound.then", "new:SetScan.then"):
-    L(src, "new:ClrBow.execute")
+    L(src, "new:BrPend.execute")
+fn("NowT", GS, "GetTimeSeconds", pure=True); vget("GetPressT", "PressT")
+fn("SinceP", KML, "Subtract_FloatFloat", pure=True); L("new:NowT.ReturnValue", "new:SinceP.A"); L("new:GetPressT.PressT", "new:SinceP.B")
+fn("Recent", KML, "LessEqual_FloatFloat", pure=True); L("new:SinceP.ReturnValue", "new:Recent.A"); S("new:Recent.B", "0.5")
+fn("HasMont", "/Script/Engine.KismetStringLibrary", "NotEqual_StrStr", pure=True); L("new:MName.ReturnValue", "new:HasMont.A"); S("new:HasMont.B", "None")
+vget("GetHoldP", "Holding")
+fn("PdA", KML, "BooleanAND", pure=True); fn("PdB", KML, "BooleanAND", pure=True); fn("PdC", KML, "BooleanAND", pure=True)
+L("new:GetHoldP.Holding", "new:PdA.A"); L("new:Recent.ReturnValue", "new:PdA.B")
+L("new:PdA.ReturnValue", "new:PdB.A"); L("new:HasMont.ReturnValue", "new:PdB.B")
+L("new:PdB.ReturnValue", "new:PdC.A"); L("new:NotBowMont.ReturnValue", "new:PdC.B")
+branch("BrPend"); L("new:PdC.ReturnValue", "new:BrPend.Condition")
+vset("ClrPressT", "PressT"); S("new:ClrPressT.PressT", "-100.0")
+L("new:BrPend.then", "new:ClrPressT.execute"); L("new:ClrPressT.then", "new:BrRel.execute"); vget("GetPR", "PendRestore"); fn("NoMont", "/Script/Engine.KismetStringLibrary", "EqualEqual_StrStr", pure=True)
+L("new:MName.ReturnValue", "new:NoMont.A"); S("new:NoMont.B", "None")
+fn("PRgo", KML, "BooleanAND", pure=True); L("new:GetPR.PendRestore", "new:PRgo.A"); L("new:NoMont.ReturnValue", "new:PRgo.B")
+branch("BrPR"); L("new:BrPend.else", "new:BrPR.execute"); L("new:PRgo.ReturnValue", "new:BrPR.Condition")
+L("new:BrPR.then", "new:CastPCh2.execute"); L("new:BrPR.else", "new:ClrBow.execute")
+L("new:SetPR0.then", "new:ClrBow.execute"); L("new:CastPCh2.CastFailed", "new:SetPR0.execute")
 vget("GetRS", "RangedSlot"); fn("RSbyte", KML, "Conv_IntToByte", pure=True); L("new:GetRS.RangedSlot", "new:RSbyte.InInt")
 node("ToER", "/Script/BlueprintGraph.K2Node_CastByteToEnum", "Enum=Enum'\"%s\"'" % EN); L("new:RSbyte.ReturnValue", "new:ToER.Byte")
 vget("GetPt12", "Part"); fn("Pt12On", KML, "Greater_IntInt", pure=True); L("new:GetPt12.Part", "new:Pt12On.A"); S("new:Pt12On.B", "0")

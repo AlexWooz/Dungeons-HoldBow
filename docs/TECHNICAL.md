@@ -49,7 +49,7 @@ Whatever actually makes the bow render happens in that native code, which is why
 ## Next steps
 1. Strip the probe: drop the v4–v11 experiments (visibility/scale/material/pose forcing, re-attach), the M/N/B keys and the readout (or keep it behind a `DEBUG` switch, as Jump does). Keep: finding the bow/melee actors, `ShowWeaponSlot(ranged)` while holding, `RestoreWeaponVisibility()` on release, the EndPlay guard.
 2. Check whether hiding the melee actor is still needed now that `ShowWeaponSlot` handles the swap.
-3. End the hold on the melee *attack* rather than A / Left Mouse presses (Left Mouse also walks): e.g. a montage other than `Player_Bow_Charge_Montage` starting (melee was `AnimMontage_1`/`_2`), after checking what rolls, potions and artifacts play.
+3. ~~End the hold on the melee attack rather than any A / Left Mouse press~~: done in v13 (see above). Other actions on A / Left Mouse (interacting with chests, NPCs) haven't been checked beyond petting.
 4. Use `RangedWeapon` = 15 directly, or keep the runtime lookup (safer across game versions).
 5. Test other ranged weapons (crossbows, longbow), missions, and the main-menu / camp transitions.
 

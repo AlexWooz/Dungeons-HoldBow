@@ -16,10 +16,9 @@ INSTALL
 2. Start the game.
 
 CONTROLS
-No new keys. Shoot as usual to take out the ranged weapon. Melee (A on
-controller, Left Mouse on keyboard and mouse) switches back.
-On keyboard and mouse, Left Mouse also walks, so clicking to walk puts the
-ranged weapon away too.
+No new keys. Shoot as usual to take out the ranged weapon. A melee attack
+(A on controller, Left Mouse on keyboard and mouse) switches back. Clicking
+to walk keeps the ranged weapon in hand.
 
 Works together with the Third-Person Camera, Analog Movement and Jump mods.
 

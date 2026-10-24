@@ -43,6 +43,8 @@ addvar Reattached bool
 addvar Found bool
 addvar ScanIdx int
 addvar RangedSlot int
+addvar PressT float
+addvar PendRestore bool
 '@ | Set-Content "$work\vars.ops" -Encoding ascii
 & $t edit "-bp=$Bp" "-ops=$work\vars.ops" | Out-File "$work\vars.log" -Encoding utf8
 if ($LASTEXITCODE) { Get-Content "$work\vars.log"; throw "addvar failed" }
